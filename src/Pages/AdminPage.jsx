@@ -21,9 +21,9 @@ const AdminPage = () => {
     setTeachers(teacherList);
   };
 
-  const filteredStudents = students.filter(
-    (s) => s.role === "student" && s.username.includes(search)
-  );
+  const filteredStudents = students
+    .filter((s) => s.role === "student")
+    .filter((s) => s.name?.includes(search));
 
   const handleAdd = async (type) => {
     if (type === "student") {
@@ -181,11 +181,9 @@ const AdminPage = () => {
                       </button>
                     </>
                   )}
-                  {s.status === "مرفوضة" && (
-                    <button onClick={() => handleDelete(s)} className="bg-red-800 text-white px-2 py-1 rounded">
-                      حذف
-                    </button>
-                  )}
+                  <button onClick={() => handleDelete(s)} className="bg-red-800 text-white px-2 py-1 rounded">
+                    حذف
+                  </button>
                 </td>
               </tr>
             ))}
