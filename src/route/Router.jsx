@@ -1,15 +1,24 @@
 import React from "react";
-import { createBrowserRouter, RouterProvider } from "react-router";
-
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import AdminPage from "../Pages/AdminPage";
+import StudentPage from "../Pages/StudentPage";
+import TeacherPage from "../Pages/TeacherPage";
 const Layout = () => {
-  <Outlet />;
+  return <Outlet />;
 };
-let router = createBrowserRouter([
+
+const router = createBrowserRouter([
   {
     path: "/",
-    elemnt:<Layout/>
+    element: <Layout />,
+    children: [
+      { path: "admin", element: <AdminPage /> },
+      { path: "student", element: <StudentPage /> },
+      { path: "teacher", element: <TeacherPage /> },
+    ],
   },
 ]);
+
 const Router = () => {
   return <RouterProvider router={router} />;
 };
