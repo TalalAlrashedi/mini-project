@@ -1,257 +1,177 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import Swal from "sweetalert2";
 
-const dummyApprovedIdeas = ["تطبيق تعليمي", "موقع للتبرعات", "نظام إدارة مكتبة"];
-
-const dummyTeacher = {
-  id: 1,
-  name: "د. علي",
-  email: "ali@tuwaiq.edu.sa",
-  phone: "0551234567",
-};
-
-const dummyTeam = [
-  { id: 1, name: "أحمد خالد", email: "ahmed@tuwaiq.edu.sa", phone: "0551111111" },
-  { id: 2, name: "سارة محمد", email: "sarah@tuwaiq.edu.sa", phone: "0552222222" },
-];
+const api = "https://6836b885664e72d28e41d28e.mockapi.io/api/register";
 
 const StudentPage = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user")) || null);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [password, setPassword] = useState("");
   const [idea, setIdea] = useState("");
-  const [ideaStatus, setIdeaStatus] = useState("انتظار");
-  const [ideas, setIdeas] = useState([]);
-  const [studentInfo, setStudentInfo] = useState({ name: "", email: "" });
+  const [myIdea, setMyIdea] = useState(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  const isEmailValid = (email) => email.includes("tuwaiq");
+  useEffect(() => {
+    if (user) {
+      axios.get(`${api}/${user.id}`).then(({ data }) => {
+        setMyIdea(data.idea ? data : null);
+      });
+    }
+  }, [user]);
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      Swal.fire("تنبيه", "يرجى تعبئة جميع الحقول", "warning");
-      return;
-    }
-    if (!isEmailValid(email)) {
-      Swal.fire("خطأ", "يجب أن يحتوي البريد الإلكتروني على كلمة طويق", "error");
-      return;
-    }
+    const teacher = JSON.parse(localStorage.getItem("user"));
+    const teacherId = teacher?.role === "teacher" ? teacher.id : null;
 
     try {
-      const response = await fetch("https://6836b885664e72d28e41d28e.mockapi.io/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: name,
-          email,
-          password,
-          role: "student",
-        }),
+      await axios.post(api, {
+        username: name,
+        email,
+        password,
+        role: "student",
+        teacherId,
+        status: "قيد المراجعة",
+        idea: "",
+        rejectReason: ""
       });
-
-      if (!response.ok) throw new Error("فشل في التسجيل");
-
-      const data = await response.json();
-      setStudentInfo({ name: data.username, email: data.email });
-      setIsLoggedIn(true);
+      Swal.fire("تم", "تم التسجيل بنجاح", "success");
       setIsRegistering(false);
-      Swal.fire("تم", "تم إنشاء الحساب بنجاح", "success");
+      setName("");
+      setEmail("");
+      setPassword("");
     } catch {
       Swal.fire("خطأ", "حدث خطأ أثناء التسجيل", "error");
     }
   };
 
-  const handleLogin = () => {
-    if (!email.trim() || !password.trim()) {
-      Swal.fire("تنبيه", "يرجى إدخال البريد الإلكتروني وكلمة المرور", "warning");
-      return;
+  const handleLogin = async () => {
+    try {
+      const { data } = await axios.get(api);
+      const found = data.find(s => s.email === email && s.password === password && s.role === "student");
+      if (found) {
+        localStorage.setItem("user", JSON.stringify(found));
+        setUser(found);
+        Swal.fire("مرحبًا", "تم تسجيل الدخول بنجاح", "success");
+      } else {
+        Swal.fire("خطأ", "بيانات غير صحيحة", "error");
+      }
+    } catch {
+      Swal.fire("خطأ", "حدث خطأ أثناء تسجيل الدخول", "error");
     }
-    if (!isEmailValid(email)) {
-      Swal.fire("خطأ", "يجب أن يحتوي البريد الإلكتروني على كلمة طويق", "error");
-      return;
-    }
-
-    setStudentInfo({ name: "طالب مسجل", email });
-    setIsLoggedIn(true);
-    Swal.fire("مرحبًا", "تم تسجيل الدخول بنجاح", "success");
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setEmail("");
-    setPassword("");
-    setName("");
-    setIdea("");
-    setIdeas([]);
-    setIdeaStatus("انتظار");
-  };
-
-  const handleAddIdea = () => {
+  const handleIdeaSubmit = async () => {
     if (!idea.trim()) {
       Swal.fire("تنبيه", "يرجى كتابة الفكرة", "warning");
       return;
     }
-    if (dummyApprovedIdeas.includes(idea.trim())) {
-      Swal.fire("تنبيه", "هذه الفكرة موجودة بالفعل وتم قبولها من قبل", "info");
-      return;
+    try {
+      const { data } = await axios.put(`${api}/${user.id}`, {
+        idea,
+        status: "قيد المراجعة"
+      });
+      setMyIdea(data);
+      Swal.fire("تم", "تم إرسال الفكرة بنجاح", "success");
+    } catch {
+      Swal.fire("خطأ", "حدث خطأ أثناء إرسال الفكرة", "error");
     }
-
-    setIdeas((prev) => [...prev, { text: idea.trim(), status: "انتظار" }]);
-    setIdea("");
-    setIdeaStatus("انتظار");
-    Swal.fire("تم", "تم إرسال الفكرة بنجاح", "success");
   };
 
-  return (
-    <div className="min-h-screen p-4 md:p-6 bg-gray-100 flex justify-center items-start">
-      {!isLoggedIn ? (
-        <div className="bg-white p-6 md:p-8 rounded shadow max-w-md w-full">
-          <h2 className="text-xl md:text-2xl mb-6 text-center font-semibold">
-            {isRegistering ? "إنشاء حساب جديد" : "تسجيل دخول"}
-          </h2>
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    setIdea("");
+    setMyIdea(null);
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gray-100 p-4">
+        <div className="bg-white p-6 rounded shadow w-full max-w-md">
+          <h2 className="text-xl font-bold mb-4 text-center">{isRegistering ? "تسجيل جديد" : "تسجيل الدخول"}</h2>
 
           {isRegistering && (
             <input
               type="text"
-              placeholder="الاسم الكامل"
+              placeholder="الاسم"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="border p-2 rounded w-full mb-4"
+              onChange={e => setName(e.target.value)}
+              className="w-full p-2 border rounded mb-3"
             />
           )}
 
           <input
             type="email"
-            placeholder="البريد الإلكتروني (يحتوي على طويق)"
+            placeholder="البريد الإلكتروني"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border p-2 rounded w-full mb-4"
+            onChange={e => setEmail(e.target.value)}
+            className="w-full p-2 border rounded mb-3"
           />
-
           <input
             type="password"
             placeholder="كلمة المرور"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border p-2 rounded w-full mb-6"
+            onChange={e => setPassword(e.target.value)}
+            className="w-full p-2 border rounded mb-4"
           />
 
-          {isRegistering ? (
-            <button
-              onClick={handleRegister}
-              className="bg-green-600 text-white w-full py-2 rounded"
-            >
-              إنشاء حساب
-            </button>
-          ) : (
-            <button
-              onClick={handleLogin}
-              className="bg-blue-600 text-white w-full py-2 rounded"
-            >
-              تسجيل دخول
-            </button>
-          )}
+          <button onClick={isRegistering ? handleRegister : handleLogin} className="w-full bg-blue-600 text-white p-2 rounded">
+            {isRegistering ? "تسجيل" : "دخول"}
+          </button>
 
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => setIsRegistering(!isRegistering)}
-              className="text-blue-500 underline"
-            >
-              {isRegistering ? "لدي حساب بالفعل" : "إنشاء حساب جديد"}
+          <p className="text-center mt-4">
+            <button onClick={() => setIsRegistering(!isRegistering)} className="text-blue-500 underline">
+              {isRegistering ? "لدي حساب" : "إنشاء حساب جديد"}
             </button>
-          </div>
+          </p>
         </div>
-      ) : (
-        <div className="w-full max-w-5xl bg-white p-4 md:p-8 rounded shadow">
-          <div className="flex flex-col md:flex-row justify-between mb-6 gap-4 md:items-center">
-            <h2 className="text-xl md:text-2xl font-semibold">مرحبا، {studentInfo.name}</h2>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 text-white px-4 py-2 rounded"
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-3xl mx-auto bg-white p-6 rounded shadow">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">مرحبًا {user.username}</h2>
+          <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded">
+            تسجيل خروج
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-2">فكرتك</h3>
+          {myIdea && myIdea.idea ? (
+            <div
+              className={`p-4 rounded ${
+                myIdea.status === "مقبولة"
+                  ? "bg-green-100"
+                  : myIdea.status === "مرفوضة"
+                  ? "bg-red-100"
+                  : "bg-yellow-100"
+              }`}
             >
-              تسجيل خروج
-            </button>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-lg md:text-xl font-semibold mb-2">الأفكار المقبولة</h3>
-            <ul className="list-disc list-inside bg-gray-50 p-4 rounded border max-h-32 overflow-auto">
-              {dummyApprovedIdeas.map((idea, idx) => (
-                <li key={idx}>{idea}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-lg md:text-xl font-semibold mb-2">إضافة فكرة جديدة</h3>
-            <textarea
-              rows={3}
-              value={idea}
-              onChange={(e) => setIdea(e.target.value)}
-              className="w-full border p-2 rounded mb-2"
-              placeholder="اكتب فكرتك هنا"
-            />
-            <button
-              onClick={handleAddIdea}
-              className="bg-green-600 text-white px-4 py-2 rounded"
-            >
-              إرسال الفكرة للمسؤول
-            </button>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-lg md:text-xl font-semibold mb-2">أفكاري المرسلة</h3>
-            {ideas.length === 0 ? (
-              <p>لم ترسل أي فكرة بعد.</p>
-            ) : (
-              <ul className="space-y-2">
-                {ideas.map((item, idx) => (
-                  <li
-                    key={idx}
-                    className={`p-3 rounded border ${
-                      item.status === "مقبولة"
-                        ? "bg-green-100 border-green-400"
-                        : item.status === "مرفوضة"
-                        ? "bg-red-100 border-red-400"
-                        : "bg-yellow-100 border-yellow-400"
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <p>{item.text}</p>
-                      <span className="font-semibold">الحالة: {item.status}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-lg md:text-xl font-semibold mb-2">المعلم المسؤول</h3>
-            <div className="border p-4 rounded bg-gray-50">
-              <p>الاسم: {dummyTeacher.name}</p>
-              <p>البريد الإلكتروني: {dummyTeacher.email}</p>
-              <p>الهاتف: {dummyTeacher.phone}</p>
+              <p className="mb-2">{myIdea.idea}</p>
+              <p className="font-semibold">الحالة: {myIdea.status}</p>
             </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg md:text-xl font-semibold mb-2">
-              أعضاء الفريق ومعلومات التواصل
-            </h3>
-            <ul className="space-y-2">
-              {dummyTeam.map((member) => (
-                <li key={member.id} className="border p-3 rounded bg-gray-50">
-                  <p>الاسم: {member.name}</p>
-                  <p>البريد الإلكتروني: {member.email}</p>
-                  <p>الهاتف: {member.phone}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
+          ) : (
+            <>
+              <textarea
+                rows={3}
+                value={idea}
+                onChange={e => setIdea(e.target.value)}
+                className="w-full border p-2 rounded mb-2"
+                placeholder="اكتب فكرتك هنا"
+              />
+              <button onClick={handleIdeaSubmit} className="bg-green-600 text-white px-4 py-2 rounded">
+                إرسال الفكرة
+              </button>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -1,262 +1,258 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import axios from "axios";
 
 const AdminPage = () => {
-  const [students, setStudents] = useState([
-    {
-      id: 1,
-      name: "أحمد خالد",
-      idea: "تطبيق تعليمي",
-      status: "قيد المراجعة",
-      rejectReason: "",
-      teacherId: null,
-    },
-    {
-      id: 2,
-      name: "سارة محمد",
-      idea: "موقع تواصل",
-      status: "مقبولة",
-      rejectReason: "",
-      teacherId: 3,
-    },
-    {
-      id: 3,
-      name: "مريم علي",
-      idea: "نظام إدارة",
-      status: "مرفوضة",
-      rejectReason: "الفكرة غير واضحة",
-      teacherId: null,
-    },
+  const [students, setStudents] = useState([]);
+  const [teachers, setTeachers] = useState([
+    { id: 1, name: "د. فهد" },
+    { id: 2, name: "د. ليلى" },
   ]);
 
-  const [teachers, setTeachers] = useState([
-    { id: 3, name: "د. فهد" },
-    { id: 4, name: "د. ليلى" },
-  ]);
+  const api = "https://6836b885664e72d28e41d28e.mockapi.io/api/register";
+
+  useEffect(() => {
+    refreshData();
+  }, []);
+
+  const refreshData = () => {
+    axios.get(api).then((res) => {
+      setStudents(res.data);
+      localStorage.setItem("students", JSON.stringify(res.data));
+    });
+  };
 
   const handleAdd = async (type) => {
-    const { value: formValues } = await Swal.fire({
-      title: `إضافة ${type === "student" ? "طالب" : "معلم"} جديد`,
-      html:
-        `<input id="swal-input1" class="swal2-input" placeholder="الاسم">` +
-        (type === "student"
-          ? `<textarea id="swal-input2" class="swal2-textarea" placeholder="الفكرة"></textarea>`
-          : ""),
-      focusConfirm: false,
-      preConfirm: () => {
-        const name = document.getElementById("swal-input1").value.trim();
-        const idea = type === "student" ? document.getElementById("swal-input2").value.trim() : null;
-        if (!name) {
-          Swal.showValidationMessage("الرجاء إدخال الاسم");
-          return;
-        }
-        if (type === "student" && !idea) {
-          Swal.showValidationMessage("الرجاء إدخال الفكرة");
-          return;
-        }
-        return { name, idea };
-      },
-      showCancelButton: true,
-    });
+    if (type === "student") {
+      const { value: formValues } = await Swal.fire({
+        title: `إضافة طالب جديد`,
+        html:
+          `<input id="swal-input1" class="swal2-input" placeholder="الاسم">` +
+          `<textarea id="swal-input2" class="swal2-textarea" placeholder="الفكرة"></textarea>` +
+          `<select id="swal-input3" class="swal2-select">
+            <option value="">اختر المعلم</option>
+            ${teachers.map((t) => `<option value="${t.id}">${t.name}</option>`).join("")}
+          </select>`,
+        focusConfirm: false,
+        preConfirm: () => {
+          const name = document.getElementById("swal-input1").value.trim();
+          const idea = document.getElementById("swal-input2").value.trim();
+          const teacherId = document.getElementById("swal-input3").value;
+          if (!name) return Swal.showValidationMessage("الرجاء إدخال الاسم");
+          if (!idea) return Swal.showValidationMessage("الرجاء إدخال الفكرة");
+          if (!teacherId) return Swal.showValidationMessage("الرجاء اختيار المعلم");
+          return { name, idea, teacherId };
+        },
+        showCancelButton: true,
+      });
 
-    if (formValues) {
-      if (type === "student") {
-        setStudents((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            name: formValues.name,
-            idea: formValues.idea,
-            status: "قيد المراجعة",
-            rejectReason: "",
-            teacherId: null,
-          },
-        ]);
-      } else {
-        setTeachers((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            name: formValues.name,
-          },
-        ]);
+      if (formValues) {
+        await axios.post(api, {
+          name: formValues.name,
+          idea: formValues.idea,
+          status: "قيد المراجعة",
+          rejectReason: "",
+          teacherId: Number(formValues.teacherId),
+        });
+        refreshData();
       }
-      Swal.fire("تمت الإضافة بنجاح", "", "success");
+    } else {
+      const { value: formValues } = await Swal.fire({
+        title: `إضافة معلم جديد`,
+        html: `<input id="swal-input1" class="swal2-input" placeholder="الاسم">`,
+        focusConfirm: false,
+        preConfirm: () => {
+          const name = document.getElementById("swal-input1").value.trim();
+          if (!name) return Swal.showValidationMessage("الرجاء إدخال الاسم");
+          return { name };
+        },
+        showCancelButton: true,
+      });
+      if (formValues) {
+        setTeachers((prev) => [...prev, { id: Date.now(), name: formValues.name }]);
+        Swal.fire("تمت الإضافة بنجاح", "", "success");
+      }
     }
   };
 
-  const acceptIdea = (studentId) => {
-    setStudents((prev) =>
-      prev.map((s) =>
-        s.id === studentId
-          ? { ...s, status: "مقبولة", rejectReason: "" }
-          : s
-      )
-    );
+  const acceptIdea = async (student) => {
+    await axios.put(`${api}/${student.id}`, {
+      ...student,
+      status: "مقبولة",
+      rejectReason: "",
+    });
+    refreshData();
     Swal.fire("تم قبول الفكرة", "", "success");
   };
 
-  const handleReject = async (studentId) => {
+  const handleReject = async (student) => {
     const { value: reason } = await Swal.fire({
       title: "سبب الرفض",
       input: "textarea",
       inputPlaceholder: "أدخل سبب الرفض هنا...",
       showCancelButton: true,
       inputValidator: (value) => {
-        if (!value.trim()) {
-          return "الرجاء إدخال سبب الرفض";
-        }
+        if (!value.trim()) return "الرجاء إدخال سبب الرفض";
       },
     });
-
     if (reason) {
-      setStudents((prev) =>
-        prev.map((s) =>
-          s.id === studentId
-            ? { ...s, status: "مرفوضة", rejectReason: reason }
-            : s
-        )
-      );
-      Swal.fire("تم رفض الفكرة", "", "success");
+      await axios.put(`${api}/${student.id}`, {
+        ...student,
+        status: "مرفوضة",
+        rejectReason: reason,
+      });
+      refreshData();
+      Swal.fire("تم الرفض", "", "success");
     }
   };
 
-  const handleEditIdea = async (student) => {
+  const handleEdit = async (student) => {
     const { value: newIdea } = await Swal.fire({
       title: "تعديل الفكرة",
       input: "textarea",
       inputValue: student.idea,
       showCancelButton: true,
       inputValidator: (value) => {
-        if (!value.trim()) {
-          return "لا يمكن ترك الفكرة فارغة";
-        }
+        if (!value.trim()) return "لا يمكن ترك الفكرة فارغة";
       },
     });
-
     if (newIdea) {
-      setStudents((prev) =>
-        prev.map((s) =>
-          s.id === student.id ? { ...s, idea: newIdea } : s
-        )
-      );
-      Swal.fire("تم التعديل بنجاح", "", "success");
+      await axios.put(`${api}/${student.id}`, {
+        ...student,
+        idea: newIdea,
+      });
+      refreshData();
+      Swal.fire("تم التعديل", "", "success");
     }
   };
 
-  const handleDeleteIdea = async (studentId) => {
+  const handleDelete = async (studentId) => {
     const result = await Swal.fire({
-      title: "هل أنت متأكد من حذف الفكرة؟",
+      title: "هل أنت متأكد من الحذف؟",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "نعم، احذف",
       cancelButtonText: "إلغاء",
     });
-
     if (result.isConfirmed) {
-      setStudents((prev) => prev.filter((s) => s.id !== studentId));
-      Swal.fire("تم الحذف", "تم حذف الفكرة بنجاح", "success");
+      await axios.delete(`${api}/${studentId}`);
+      refreshData();
+      Swal.fire("تم الحذف", "", "success");
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4">
-      <header className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">لوحة تحكم الإدارة</h1>
-        <div className="space-x-2">
+    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-3">
+        <h1 className="text-3xl font-extrabold text-gray-900">لوحة تحكم الإدارة</h1>
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={() => handleAdd("student")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow-md transition"
           >
             إضافة طالب
           </button>
           <button
             onClick={() => handleAdd("teacher")}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg shadow-md transition"
           >
             إضافة معلم
           </button>
         </div>
-      </header>
+      </div>
 
-      <section>
-        <h2 className="text-xl font-semibold mb-4">الطلاب</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-right border border-gray-300">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border p-2">الاسم</th>
-                <th className="border p-2">الفكرة</th>
-                <th className="border p-2">الحالة</th>
-                <th className="border p-2">المعلم</th>
-                <th className="border p-2">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student) => {
-                const teacherName = teachers.find(t => t.id === student.teacherId)?.name || "غير معين";
-                return (
-                  <tr
-                    key={student.id}
-                    className={`border-b ${
-                      student.status === "مرفوضة" ? "bg-red-50" :
-                      student.status === "مقبولة" ? "bg-green-50" : ""
-                    }`}
-                  >
-                    <td className="border p-2">{student.name}</td>
-                    <td className="border p-2 whitespace-pre-wrap max-w-xs">{student.idea}</td>
-                    <td className="border p-2">{student.status}</td>
-                    <td className="border p-2">{teacherName}</td>
-                    <td className="border p-2 space-x-1 flex justify-end">
-                      {student.status === "قيد المراجعة" && (
-                        <>
-                          <button
-                            onClick={() => acceptIdea(student.id)}
-                            className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded"
-                          >
-                            قبول
-                          </button>
-                          <button
-                            onClick={() => handleEditIdea(student)}
-                            className="bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded"
-                          >
-                            تعديل
-                          </button>
-                          <button
-                            onClick={() => handleReject(student.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
-                          >
-                            رفض
-                          </button>
-                        </>
-                      )}
-                      {student.status === "مرفوضة" && (
-                        <>
-                          <button
-                            onClick={() => handleDeleteIdea(student.id)}
-                            className="bg-red-700 hover:bg-red-800 text-white px-2 py-1 rounded"
-                          >
-                            حذف الفكرة
-                          </button>
-                        </>
-                      )}
-                      {student.status === "مقبولة" && (
-                        <span className="text-green-700 font-semibold">مقبولة</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <div className="overflow-x-auto rounded-lg shadow-lg bg-white">
+        <table className="min-w-full text-right border-collapse">
+          <thead className="bg-gradient-to-r from-blue-400 to-indigo-600 text-white">
+            <tr>
+              <th className="py-3 px-6 font-semibold border-l border-white">الاسم</th>
+              <th className="py-3 px-6 font-semibold border-l border-white max-w-xs">الفكرة</th>
+              <th className="py-3 px-6 font-semibold border-l border-white">الحالة</th>
+              <th className="py-3 px-6 font-semibold border-l border-white">المعلم</th>
+              <th className="py-3 px-6 font-semibold border-l border-white">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {students.map((student) => {
+              const teacherName = teachers.find((t) => t.id === student.teacherId)?.name || "غير معين";
+              const statusColors = {
+                "قيد المراجعة": "bg-yellow-100 text-yellow-800",
+                "مقبولة": "bg-green-100 text-green-800",
+                "مرفوضة": "bg-red-100 text-red-800",
+              };
+              return (
+                <tr
+                  key={student.id}
+                  className={`border-b last:border-b-0 ${
+                    student.status === "مرفوضة"
+                      ? "bg-red-50"
+                      : student.status === "مقبولة"
+                      ? "bg-green-50"
+                      : "bg-yellow-50"
+                  } hover:shadow-md transition`}
+                >
+                  <td className="border-l border-gray-200 py-3 px-4 whitespace-nowrap font-medium text-gray-900">{student.name}</td>
+                  <td className="border-l border-gray-200 py-3 px-4 max-w-xs whitespace-pre-wrap break-words text-gray-700">{student.idea}</td>
+                  <td>
+                    <span
+                      className={`inline-block py-1 px-3 rounded-full font-semibold text-sm ${statusColors[student.status] || "bg-gray-100 text-gray-700"}`}
+                    >
+                      {student.status}
+                    </span>
+                  </td>
+                  <td className="border-l border-gray-200 py-3 px-4 font-semibold text-indigo-700">{teacherName}</td>
+                  <td className="border-l border-gray-200 py-3 px-4 flex flex-wrap justify-end gap-2">
+                    {student.status === "قيد المراجعة" && (
+                      <>
+                        <button
+                          onClick={() => acceptIdea(student)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md transition"
+                        >
+                          قبول
+                        </button>
+                        <button
+                          onClick={() => handleEdit(student)}
+                          className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded-md transition"
+                        >
+                          تعديل
+                        </button>
+                        <button
+                          onClick={() => handleReject(student)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md transition"
+                        >
+                          رفض
+                        </button>
+                      </>
+                    )}
+                    {student.status === "مرفوضة" && (
+                      <button
+                        onClick={() => handleDelete(student.id)}
+                        className="bg-red-800 hover:bg-red-900 text-white px-3 py-1 rounded-md transition"
+                      >
+                        حذف
+                      </button>
+                    )}
+                    {student.status === "مقبولة" && (
+                      <span className="text-green-700 font-semibold py-1 px-3">مقبولة</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-      <section className="mt-10">
-        <h2 className="text-xl font-semibold mb-4">المعلمين</h2>
-        <ul className="list-disc list-inside">
+      <section className="mt-12 p-6 bg-white rounded-lg shadow-md max-w-md mx-auto">
+        <h2 className="text-xl font-bold mb-4 border-b border-gray-300 pb-2 text-center text-indigo-700">المعلمون</h2>
+        <ul className="list-disc list-inside space-y-2 text-gray-800">
           {teachers.map((teacher) => (
-            <li key={teacher.id}>{teacher.name}</li>
+            <li
+              key={teacher.id}
+              className="bg-indigo-50 rounded-md px-3 py-2 font-medium hover:bg-indigo-100 cursor-default transition"
+            >
+              {teacher.name}
+            </li>
           ))}
         </ul>
       </section>
