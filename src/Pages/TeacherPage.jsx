@@ -29,58 +29,54 @@ const TeacherPage = () => {
     if (teacher) fetchStudents();
   }, [teacher]);
 
-  const updateIdeaStatus = async (studentId, status, rejectReason = "") => {
+  const updateIdeaStatus = async (student, index, status, reason = "") => {
+    const updatedIdeas = [...(student.ideas || [])];
+    updatedIdeas[index].status = status;
+    updatedIdeas[index].rejectReason = status === "مرفوضة" ? reason : "";
+
     try {
-      const { data } = await axios.put(`${api}/${studentId}`, {
-        status,
-        rejectReason: status === "مرفوضة" ? rejectReason : "",
-      });
-      setStudents((prev) => prev.map((stu) => (stu.id === studentId ? data : stu)));
-      Swal.fire("تم", `تم تحديث حالة الفكرة إلى "${status}"`, "success");
+      await axios.put(`${api}/${student.id}`, { ...student, ideas: updatedIdeas });
+      fetchStudents();
+      Swal.fire("تم", `تم تحديث الحالة إلى "${status}"`, "success");
     } catch {
-      Swal.fire("خطأ", "حدث خطأ أثناء تحديث الحالة", "error");
+      Swal.fire("خطأ", "حدث خطأ أثناء التحديث", "error");
     }
   };
 
-  const handleReject = (student) => {
+  const handleReject = (student, index) => {
     Swal.fire({
-      title: `رفض فكرة ${student.username}`,
+      title: `سبب رفض الفكرة`,
       input: "text",
-      inputLabel: "سبب الرفض",
       inputPlaceholder: "اكتب سبب الرفض هنا...",
       showCancelButton: true,
       confirmButtonText: "رفض",
-      cancelButtonText: "إلغاء",
-      inputValidator: (value) => {
-        if (!value) return "الرجاء كتابة سبب الرفض!";
-      },
+      inputValidator: (value) => (!value ? "الرجاء كتابة السبب!" : undefined),
     }).then((result) => {
       if (result.isConfirmed) {
-        updateIdeaStatus(student.id, "مرفوضة", result.value);
+        updateIdeaStatus(student, index, "مرفوضة", result.value);
       }
     });
   };
 
-  const handleAccept = (student) => {
+  const handleAccept = (student, index) => {
     Swal.fire({
-      title: `قبول فكرة ${student.username}`,
+      title: "قبول الفكرة",
       text: "هل أنت متأكد من قبول هذه الفكرة؟",
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "نعم، قبول",
-      cancelButtonText: "إلغاء",
+      confirmButtonText: "نعم",
     }).then((result) => {
       if (result.isConfirmed) {
-        updateIdeaStatus(student.id, "مقبولة");
+        updateIdeaStatus(student, index, "مقبولة");
       }
     });
   };
 
   if (!teacher) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-        <div className="bg-white p-6 rounded shadow w-full max-w-md text-center">
-          <p>يجب تسجيل الدخول كمعلم لعرض هذه الصفحة.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white p-6 rounded shadow text-center">
+          <p>يجب تسجيل الدخول كمعلم.</p>
         </div>
       </div>
     );
@@ -88,61 +84,65 @@ const TeacherPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-5xl mx-auto bg-white p-6 rounded shadow">
-        <h2 className="text-2xl font-bold mb-6">فريقك الطلابي</h2>
+      <div className="max-w-6xl mx-auto bg-white p-6 rounded shadow">
+        <h2 className="text-2xl font-bold mb-4">طلابك</h2>
 
         {loading ? (
           <p>جاري تحميل البيانات...</p>
         ) : students.length === 0 ? (
-          <p>لا يوجد طلاب تحت إدارتك حاليًا.</p>
+          <p>لا يوجد طلاب.</p>
         ) : (
-          <div className="overflow-auto">
-            <table className="min-w-full border border-gray-300 text-sm">
-              <thead>
-                <tr className="bg-gray-200 text-right">
-                  <th className="border p-2">الاسم</th>
-                  <th className="border p-2">الفكرة</th>
-                  <th className="border p-2">الحالة</th>
-                  <th className="border p-2">سبب الرفض</th>
-                  <th className="border p-2">إجراءات</th>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-right">
+              <thead className="bg-gray-200">
+                <tr>
+                  <th className="p-2 border">الطالب</th>
+                  <th className="p-2 border">الأفكار</th>
                 </tr>
               </thead>
               <tbody>
                 {students.map((stu) => (
-                  <tr key={stu.id} className="text-right">
-                    <td className="border p-2">{stu.username}</td>
-                    <td className="border p-2">{stu.idea || "-"}</td>
-                    <td
-                      className={`border p-2 font-semibold ${
-                        stu.status === "مقبولة"
-                          ? "text-green-600"
-                          : stu.status === "مرفوضة"
-                          ? "text-red-600"
-                          : "text-yellow-600"
-                      }`}
-                    >
-                      {stu.status || "قيد المراجعة"}
-                    </td>
-                    <td className="border p-2">{stu.rejectReason || "-"}</td>
-                    <td className="border p-2">
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {stu.status !== "مقبولة" && (
-                          <button
-                            onClick={() => handleAccept(stu)}
-                            className="bg-green-600 text-white px-3 py-1 rounded"
-                          >
-                            قبول
-                          </button>
-                        )}
-                        {stu.status !== "مرفوضة" && (
-                          <button
-                            onClick={() => handleReject(stu)}
-                            className="bg-red-600 text-white px-3 py-1 rounded"
-                          >
-                            رفض
-                          </button>
-                        )}
-                      </div>
+                  <tr key={stu.id} className="border-t align-top">
+                    <td className="p-2 font-semibold">{stu.username}</td>
+                    <td className="p-2 space-y-3">
+                      {(stu.ideas || []).map((idea, idx) => (
+                        <div key={idx} className="border rounded p-2 bg-gray-50">
+                          <p>{idea.idea}</p>
+                          <p className="text-sm text-gray-600">
+                            الحالة:{" "}
+                            <span
+                              className={
+                                idea.status === "مقبولة"
+                                  ? "text-green-600"
+                                  : idea.status === "مرفوضة"
+                                  ? "text-red-600"
+                                  : "text-yellow-600"
+                              }
+                            >
+                              {idea.status}
+                            </span>
+                          </p>
+                          {idea.status === "مرفوضة" && (
+                            <p className="text-sm text-red-500">سبب الرفض: {idea.rejectReason}</p>
+                          )}
+                          {idea.status === "قيد المراجعة" && (
+                            <div className="flex gap-2 mt-2 flex-wrap">
+                              <button
+                                onClick={() => handleAccept(stu, idx)}
+                                className="bg-green-600 text-white px-3 py-1 rounded"
+                              >
+                                قبول
+                              </button>
+                              <button
+                                onClick={() => handleReject(stu, idx)}
+                                className="bg-red-600 text-white px-3 py-1 rounded"
+                              >
+                                رفض
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </td>
                   </tr>
                 ))}

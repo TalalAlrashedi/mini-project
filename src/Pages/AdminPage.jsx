@@ -16,14 +16,47 @@ const AdminPage = () => {
 
   const fetchData = async () => {
     const res = await axios.get(api);
-    setStudents(res.data);
-    const teacherList = res.data.filter((u) => u.role === "teacher");
-    setTeachers(teacherList);
+    setStudents(res.data.filter((u) => u.role === "student"));
+    setTeachers(res.data.filter((u) => u.role === "teacher"));
   };
 
-  const filteredStudents = students
-    .filter((s) => s.role === "student")
-    .filter((s) => s.username?.includes(search));
+  const filteredStudents = students.filter((s) => s.username?.includes(search));
+
+  const handleIdeaAction = async (student, index, type) => {
+    const updatedIdeas = [...(student.ideas || [])];
+    if (type === "accept") {
+      updatedIdeas[index].status = "مقبولة";
+    } else if (type === "reject") {
+      const { value: reason } = await Swal.fire({
+        title: "سبب الرفض",
+        input: "textarea",
+        showCancelButton: true,
+      });
+      if (!reason) return;
+      updatedIdeas[index].status = "مرفوضة";
+      updatedIdeas[index].rejectReason = reason;
+    } else if (type === "edit") {
+      const { value: newIdea } = await Swal.fire({
+        title: "تعديل الفكرة",
+        input: "textarea",
+        inputValue: updatedIdeas[index].idea,
+        showCancelButton: true,
+      });
+      if (!newIdea) return;
+      updatedIdeas[index].idea = newIdea;
+    } else if (type === "delete") {
+      const res = await Swal.fire({
+        title: "هل أنت متأكد من حذف الفكرة؟",
+        icon: "warning",
+        showCancelButton: true,
+      });
+      if (!res.isConfirmed) return;
+      updatedIdeas.splice(index, 1);
+    }
+
+    await axios.put(`${api}/${student.id}`, { ...student, ideas: updatedIdeas });
+    fetchData();
+  };
 
   const handleAdd = async (type) => {
     if (type === "student") {
@@ -31,25 +64,25 @@ const AdminPage = () => {
         title: "إضافة طالب",
         html:
           '<input id="swal-name" class="swal2-input" placeholder="الاسم">' +
-          '<textarea id="swal-idea" class="swal2-textarea" placeholder="الفكرة"></textarea>' +
+          '<input id="swal-email" class="swal2-input" placeholder="البريد">' +
           `<select id="swal-teacher" class="swal2-select">
             <option value="">اختر المعلم</option>
             ${teachers.map((t) => `<option value="${t.id}">${t.username}</option>`).join("")}
           </select>`,
         preConfirm: () => {
           const name = document.getElementById("swal-name").value;
-          const idea = document.getElementById("swal-idea").value;
+          const email = document.getElementById("swal-email").value;
           const teacherId = document.getElementById("swal-teacher").value;
-          if (!name || !idea || !teacherId) return false;
-          return { name, idea, teacherId };
+          if (!name || !email || !teacherId) return false;
+          return { name, email, teacherId };
         },
         showCancelButton: true,
       });
       if (form) {
         await axios.post(api, {
           username: form.name,
-          idea: form.idea,
-          status: "قيد المراجعة",
+          email: form.email,
+          ideas: [],
           role: "student",
           teacherId: form.teacherId,
         });
@@ -61,50 +94,27 @@ const AdminPage = () => {
         input: "text",
         inputPlaceholder: "اسم المعلم",
         showCancelButton: true,
-        inputValidator: (val) => (!val ? "الرجاء إدخال الاسم" : null),
       });
       if (name) {
-        await axios.post(api, {
-          username: name,
-          role: "teacher",
-        });
+        await axios.post(api, { username: name, role: "teacher" });
         fetchData();
       }
     }
   };
 
-  const handleEdit = async (student) => {
-    const { value: idea } = await Swal.fire({
-      title: "تعديل الفكرة",
-      input: "textarea",
-      inputValue: student.idea,
+  const handleAssignTeacher = async (student) => {
+    const { value: selectedId } = await Swal.fire({
+      title: `تعيين معلم للطالب: ${student.username}`,
+      input: "select",
+      inputOptions: Object.fromEntries(teachers.map((t) => [t.id, t.username])),
+      inputPlaceholder: "اختر معلماً",
       showCancelButton: true,
     });
-    if (idea) {
-      await axios.put(`${api}/${student.id}`, { ...student, idea });
+    if (selectedId) {
+      await axios.put(`${api}/${student.id}`, { ...student, teacherId: selectedId });
       fetchData();
+      Swal.fire("تم", "تم ربط الطالب بالمعلم بنجاح", "success");
     }
-  };
-
-  const handleReject = async (student) => {
-    const { value: reason } = await Swal.fire({
-      title: "سبب الرفض",
-      input: "textarea",
-      showCancelButton: true,
-    });
-    if (reason) {
-      await axios.put(`${api}/${student.id}`, {
-        ...student,
-        status: "مرفوضة",
-        rejectReason: reason,
-      });
-      fetchData();
-    }
-  };
-
-  const handleAccept = async (student) => {
-    await axios.put(`${api}/${student.id}`, { ...student, status: "مقبولة" });
-    fetchData();
   };
 
   const handleDelete = async (user) => {
@@ -119,29 +129,13 @@ const AdminPage = () => {
     }
   };
 
-  const handleAssignTeacher = async (student) => {
-    const { value: selectedId } = await Swal.fire({
-      title: `تعيين معلم للطالب: ${student.username}`,
-      input: "select",
-      inputOptions: Object.fromEntries(teachers.map((t) => [t.id, t.username])),
-      inputPlaceholder: "اختر معلماً",
-      showCancelButton: true,
-    });
-
-    if (selectedId) {
-      await axios.put(`${api}/${student.id}`, { ...student, teacherId: selectedId });
-      fetchData();
-      Swal.fire("تم", "تم ربط الطالب بالمعلم بنجاح", "success");
-    }
-  };
-
   const logout = () => {
     localStorage.clear();
     navigate("/");
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-8">
+    <div className="p-6 max-w-7xl mx-auto space-y-8">
       <div className="flex flex-wrap justify-between items-center gap-4">
         <h1 className="text-2xl font-bold">لوحة تحكم الإدارة</h1>
         <button onClick={logout} className="bg-red-500 text-white px-4 py-2 rounded">
@@ -165,23 +159,61 @@ const AdminPage = () => {
         />
       </div>
 
-      <div className="overflow-x-auto bg-white rounded shadow">
+      <div className="bg-white rounded shadow overflow-x-auto">
         <table className="w-full text-right">
           <thead className="bg-gray-200">
             <tr>
-              <th className="p-3">الاسم</th>
-              <th className="p-3">الفكرة</th>
-              <th className="p-3">الحالة</th>
+              <th className="p-3">الطالب</th>
+              <th className="p-3">الأفكار</th>
               <th className="p-3">المعلم</th>
               <th className="p-3">إجراءات</th>
             </tr>
           </thead>
           <tbody>
             {filteredStudents.map((s) => (
-              <tr key={s.id} className="border-t">
+              <tr key={s.id} className="border-t align-top">
                 <td className="p-3 font-medium">{s.username}</td>
-                <td className="p-3">{s.idea}</td>
-                <td className="p-3">{s.status}</td>
+                <td className="p-3 space-y-3">
+                  {(s.ideas || []).map((idea, idx) => (
+                    <div key={idx} className="border p-2 rounded bg-gray-50">
+                      <p>{idea.idea}</p>
+                      <p className="text-sm text-gray-600">الحالة: {idea.status}</p>
+                      {idea.status === "مرفوضة" && (
+                        <p className="text-sm text-red-600">سبب الرفض: {idea.rejectReason}</p>
+                      )}
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {idea.status === "قيد المراجعة" && (
+                          <>
+                            <button
+                              onClick={() => handleIdeaAction(s, idx, "accept")}
+                              className="bg-green-500 text-white px-2 py-1 rounded"
+                            >
+                              قبول
+                            </button>
+                            <button
+                              onClick={() => handleIdeaAction(s, idx, "reject")}
+                              className="bg-red-500 text-white px-2 py-1 rounded"
+                            >
+                              رفض
+                            </button>
+                            <button
+                              onClick={() => handleIdeaAction(s, idx, "edit")}
+                              className="bg-yellow-400 text-white px-2 py-1 rounded"
+                            >
+                              تعديل
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => handleIdeaAction(s, idx, "delete")}
+                          className="bg-red-800 text-white px-2 py-1 rounded"
+                        >
+                          حذف
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </td>
                 <td className="p-3">
                   {teachers.find((t) => t.id === s.teacherId)?.username || (
                     <button
@@ -192,22 +224,9 @@ const AdminPage = () => {
                     </button>
                   )}
                 </td>
-                <td className="p-3 flex flex-wrap gap-2">
-                  {s.status === "قيد المراجعة" && (
-                    <>
-                      <button onClick={() => handleAccept(s)} className="bg-green-600 text-white px-2 py-1 rounded">
-                        قبول
-                      </button>
-                      <button onClick={() => handleReject(s)} className="bg-red-600 text-white px-2 py-1 rounded">
-                        رفض
-                      </button>
-                      <button onClick={() => handleEdit(s)} className="bg-yellow-400 text-white px-2 py-1 rounded">
-                        تعديل
-                      </button>
-                    </>
-                  )}
-                  <button onClick={() => handleDelete(s)} className="bg-red-800 text-white px-2 py-1 rounded">
-                    حذف
+                <td className="p-3">
+                  <button onClick={() => handleDelete(s)} className="text-red-600">
+                    حذف الطالب
                   </button>
                 </td>
               </tr>
@@ -220,7 +239,7 @@ const AdminPage = () => {
         <h2 className="text-lg font-bold mb-2">قائمة المعلمين</h2>
         <ul className="list-disc pr-6 space-y-1">
           {teachers.map((t) => (
-            <li key={t.id} className="flex justify-between">
+            <li key={t.id} className="flex justify-between items-center">
               <span>{t.username}</span>
               <button onClick={() => handleDelete(t)} className="text-red-600 text-sm">
                 حذف
