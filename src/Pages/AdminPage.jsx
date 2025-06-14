@@ -131,7 +131,7 @@ const AdminPage = () => {
 
   const logout = () => {
     localStorage.clear();
-    navigate("/");
+    navigate("/auth");
   };
 
   return (

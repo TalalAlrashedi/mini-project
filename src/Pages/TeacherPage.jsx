@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
 
 const api = "https://6836b885664e72d28e41d28e.mockapi.io/api/register";
 
 const TeacherPage = () => {
+  const navigate = useNavigate();
   const [teacher, setTeacher] = useState(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     return user?.role === "teacher" ? user : null;
@@ -72,82 +74,84 @@ const TeacherPage = () => {
     });
   };
 
-  if (!teacher) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="bg-white p-6 rounded shadow text-center">
-          <p>يجب تسجيل الدخول كمعلم.</p>
-        </div>
-      </div>
-    );
-  }
+  const handleLogout = () => {
+    Swal.fire({
+      title: "تسجيل الخروج",
+      text: "هل أنت متأكد أنك تريد تسجيل الخروج؟",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "نعم، خروج",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem("user");
+        navigate("/auth");
+      }
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-6xl mx-auto bg-white p-6 rounded shadow">
-        <h2 className="text-2xl font-bold mb-4">طلابك</h2>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-6xl mx-auto bg-white p-6 rounded-2xl shadow-lg space-y-6 relative">
+        <button
+          onClick={handleLogout}
+          className=" bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-md shadow text-sm"
+        >
+          تسجيل الخروج
+        </button>
+
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">الطلاب المرتبطين بك</h2>
 
         {loading ? (
-          <p>جاري تحميل البيانات...</p>
+          <p className="text-gray-600">جاري تحميل البيانات...</p>
         ) : students.length === 0 ? (
-          <p>لا يوجد طلاب.</p>
+          <p className="text-gray-600">لا يوجد طلاب مرتبطين بك حالياً.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-right">
-              <thead className="bg-gray-200">
-                <tr>
-                  <th className="p-2 border">الطالب</th>
-                  <th className="p-2 border">الأفكار</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((stu) => (
-                  <tr key={stu.id} className="border-t align-top">
-                    <td className="p-2 font-semibold">{stu.username}</td>
-                    <td className="p-2 space-y-3">
-                      {(stu.ideas || []).map((idea, idx) => (
-                        <div key={idx} className="border rounded p-2 bg-gray-50">
-                          <p>{idea.idea}</p>
-                          <p className="text-sm text-gray-600">
-                            الحالة:{" "}
-                            <span
-                              className={
-                                idea.status === "مقبولة"
-                                  ? "text-green-600"
-                                  : idea.status === "مرفوضة"
-                                  ? "text-red-600"
-                                  : "text-yellow-600"
-                              }
-                            >
-                              {idea.status}
-                            </span>
-                          </p>
-                          {idea.status === "مرفوضة" && (
-                            <p className="text-sm text-red-500">سبب الرفض: {idea.rejectReason}</p>
-                          )}
-                          {idea.status === "قيد المراجعة" && (
-                            <div className="flex gap-2 mt-2 flex-wrap">
-                              <button
-                                onClick={() => handleAccept(stu, idx)}
-                                className="bg-green-600 text-white px-3 py-1 rounded"
-                              >
-                                قبول
-                              </button>
-                              <button
-                                onClick={() => handleReject(stu, idx)}
-                                className="bg-red-600 text-white px-3 py-1 rounded"
-                              >
-                                رفض
-                              </button>
-                            </div>
-                          )}
+          <div className="space-y-6">
+            {students.map((stu) => (
+              <div key={stu.id} className="bg-gray-50 p-4 rounded-lg shadow-sm border">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">{stu.username}</h3>
+                <div className="space-y-4">
+                  {(stu.ideas || []).map((idea, idx) => (
+                    <div key={idx} className="bg-white p-4 rounded-lg border shadow">
+                      <p className="text-gray-800">{idea.idea}</p>
+                      <p className="text-sm mt-2">
+                        الحالة:{" "}
+                        <span
+                          className={
+                            idea.status === "مقبولة"
+                              ? "text-green-600 font-bold"
+                              : idea.status === "مرفوضة"
+                              ? "text-red-600 font-bold"
+                              : "text-yellow-600 font-bold"
+                          }
+                        >
+                          {idea.status}
+                        </span>
+                      </p>
+                      {idea.status === "مرفوضة" && (
+                        <p className="text-sm text-red-500 mt-1">سبب الرفض: {idea.rejectReason}</p>
+                      )}
+                      {idea.status === "قيد المراجعة" && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          <button
+                            onClick={() => handleAccept(stu, idx)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-md shadow"
+                          >
+                            قبول
+                          </button>
+                          <button
+                            onClick={() => handleReject(stu, idx)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-md shadow"
+                          >
+                            رفض
+                          </button>
                         </div>
-                      ))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
