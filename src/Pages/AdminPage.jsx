@@ -131,176 +131,217 @@ const AdminPage = () => {
 
   const logout = () => {
     localStorage.clear();
-    navigate("/auth");
+    navigate("/");
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 bg-gray-50 min-h-screen">
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <h1 className="text-3xl font-extrabold text-gray-900">لوحة تحكم الإدارة</h1>
-        <button
-          onClick={logout}
-          className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg shadow-md transition"
-        >
-          تسجيل خروج
-        </button>
-      </div>
-  
-      <div className="flex flex-wrap gap-4 items-center">
-        <button
-          onClick={() => handleAdd("student")}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow-md transition"
-        >
-          إضافة طالب
-        </button>
-        <button
-          onClick={() => handleAdd("teacher")}
-          className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg shadow-md transition"
-        >
-          إضافة معلم
-        </button>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="بحث عن طالب"
-          className="border border-gray-300 focus:ring-2 focus:ring-blue-500 p-2 rounded-lg w-64 transition"
-        />
-      </div>
-  
-      <div className="overflow-x-auto bg-white rounded-lg shadow-lg border border-gray-300">
-        <table className="w-full table-auto border-collapse text-right">
-          <thead className="bg-gray-200 text-gray-700">
-            <tr>
-              <th className="p-4 border border-gray-300">الطالب</th>
-              <th className="p-4 border border-gray-300">الأفكار</th>
-              <th className="p-4 border border-gray-300">المعلم</th>
-              <th className="p-4 border border-gray-300">إجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredStudents.map((s) => (
-              <tr
-                key={s.id}
-                className="hover:bg-gray-100 transition"
-              >
-                <td className="p-4 font-semibold text-gray-900 border border-gray-300 align-top">
-                  {s.username}
-                </td>
-                <td className="p-4 border border-gray-300 space-y-4 align-top">
-                  {(s.ideas || []).map((idea, idx) => {
-                    let bgColor = "bg-gray-50";
-                    let statusColor = "text-gray-600";
-                    if (idea.status === "مقبولة") {
-                      bgColor = "bg-green-100";
-                      statusColor = "text-green-700 font-bold";
-                    } else if (idea.status === "مرفوضة") {
-                      bgColor = "bg-red-100";
-                      statusColor = "text-red-700 font-bold";
-                    } else if (idea.status === "قيد المراجعة") {
-                      bgColor = "bg-yellow-100";
-                      statusColor = "text-yellow-700 font-semibold";
-                    }
-  
-                    return (
-                      <div
-                        key={idx}
-                        className={`${bgColor} border border-gray-300 rounded-lg p-4 shadow-sm`}
-                      >
-                        <p className="text-gray-800">{idea.idea}</p>
-                        <p className={`text-sm ${statusColor}`}>
-                          الحالة: {idea.status}
-                        </p>
-                        {idea.status === "مرفوضة" && (
-                          <p className="text-sm text-red-600 mt-1">
-                            سبب الرفض: {idea.rejectReason}
-                          </p>
-                        )}
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {idea.status === "قيد المراجعة" && (
-                            <>
-                              <button
-                                onClick={() =>
-                                  handleIdeaAction(s, idx, "accept")
-                                }
-                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md transition"
-                              >
-                                قبول
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleIdeaAction(s, idx, "reject")
-                                }
-                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md transition"
-                              >
-                                رفض
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleIdeaAction(s, idx, "edit")
-                                }
-                                className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded-md transition"
-                              >
-                                تعديل
-                              </button>
-                            </>
-                          )}
-                          <button
-                            onClick={() => handleIdeaAction(s, idx, "delete")}
-                            className="bg-gray-800 hover:bg-black text-white px-3 py-1 rounded-md transition"
-                          >
-                            حذف
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </td>
-                <td className="p-4 border border-gray-300 align-top text-gray-800">
-                  {teachers.find((t) => t.id === s.teacherId)?.username || (
-                    <button
-                      onClick={() => handleAssignTeacher(s)}
-                      className="text-blue-600 underline hover:text-blue-800 transition"
-                    >
-                      تعيين معلم
-                    </button>
-                  )}
-                </td>
-                <td className="p-4 border border-gray-300 align-top">
-                  <button
-                    onClick={() => handleDelete(s)}
-                    className="text-red-600 hover:underline font-semibold"
-                  >
-                    حذف الطالب
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-  
-      <div className="bg-white p-5 rounded-lg shadow-lg border border-gray-300">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">قائمة المعلمين</h2>
-        <ul className="space-y-2">
-          {teachers.map((t) => (
-            <li
-              key={t.id}
-              className="flex justify-between items-center border-b border-gray-300 pb-2"
+    <div className="min-h-screen bg-gradient-to-br from-violet-200 to-violet-50 px-4 py-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <img src="https://cdn.tuwaiq.edu.sa/landing/images/logo/logo-h.png" alt="Tuwaiq" className="w-28 sm:w-32" />
+              <h1 className="text-xl sm:text-3xl font-bold text-violet-700">لوحة تحكم الإدارة</h1>
+            </div>
+            <button
+              onClick={logout}
+              className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-medium transition"
             >
-              <span className="text-gray-800 font-medium">{t.username}</span>
+              تسجيل خروج
+            </button>
+          </div>
+        </div>
+  
+        <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <button
-                onClick={() => handleDelete(t)}
-                className="text-red-600 hover:underline text-sm font-semibold"
+                onClick={() => handleAdd("student")}
+                className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg font-medium"
               >
-                حذف
+                إضافة طالب
               </button>
-            </li>
-          ))}
-        </ul>
+              <button
+                onClick={() => handleAdd("teacher")}
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium"
+              >
+                إضافة معلم
+              </button>
+            </div>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="بحث عن طالب..."
+              className="w-full sm:w-72 border border-gray-300 rounded-xl p-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+            />
+          </div>
+        </div>
+  
+        <div className="bg-white rounded-2xl shadow overflow-auto">
+          <div className="px-6 py-4 bg-violet-50 border-b border-violet-200">
+            <h2 className="text-xl font-bold text-violet-700">قائمة الطلاب</h2>
+          </div>
+          <div className="min-w-[850px]">
+            <table className="w-full table-auto border border-violet-300 text-right">
+              <thead className="bg-violet-100 text-violet-800">
+                <tr>
+                  <th className="p-3 border border-violet-300">الطالب</th>
+                  <th className="p-3 border border-violet-300">الأفكار</th>
+                  <th className="p-3 border border-violet-300">المعلم</th>
+                  <th className="p-3 border border-violet-300">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStudents.map((s, i) => (
+                  <tr key={s.id} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <td className="p-4 border border-violet-200 font-semibold text-gray-800">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-violet-100 flex justify-center items-center text-violet-700 font-bold">
+                          {s.username.charAt(0)}
+                        </div>
+                        <span>{s.username}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 border border-violet-200">
+                      <div className="space-y-2 max-w-sm">
+                        {(s.ideas || []).map((idea, idx) => {
+                          let bg = "bg-gray-50", text = "text-gray-700", border = "border-gray-300"
+                          if (idea.status === "مقبولة") {
+                            bg = "bg-green-50"
+                            text = "text-green-700 font-semibold"
+                            border = "border-green-300"
+                          } else if (idea.status === "مرفوضة") {
+                            bg = "bg-red-50"
+                            text = "text-red-700 font-semibold"
+                            border = "border-red-300"
+                          } else if (idea.status === "قيد المراجعة") {
+                            bg = "bg-yellow-50"
+                            text = "text-yellow-700 font-semibold"
+                            border = "border-yellow-300"
+                          }
+  
+                          return (
+                            <div key={idx} className={`${bg} border ${border} p-3 rounded-lg text-sm`}>
+                              <p className="text-gray-800 mb-2 break-words">{idea.idea}</p>
+                              <div className="flex flex-wrap gap-2 items-center text-xs mb-2">
+                                <span className="bg-white px-2 py-1 rounded-lg border">الحالة:</span>
+                                <span className={text}>{idea.status}</span>
+                              </div>
+                              {idea.status === "مرفوضة" && (
+                                <p className="text-red-600 bg-red-100 p-2 rounded-lg text-xs mb-2">
+                                  سبب الرفض: {idea.rejectReason}
+                                </p>
+                              )}
+                              <div className="flex flex-wrap gap-2">
+                                {idea.status === "قيد المراجعة" && (
+                                  <>
+                                    <button
+                                      onClick={() => handleIdeaAction(s, idx, "accept")}
+                                      className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md text-xs"
+                                    >
+                                      قبول
+                                    </button>
+                                    <button
+                                      onClick={() => handleIdeaAction(s, idx, "reject")}
+                                      className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-md text-xs"
+                                    >
+                                      رفض
+                                    </button>
+                                    <button
+                                      onClick={() => handleIdeaAction(s, idx, "edit")}
+                                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded-md text-xs"
+                                    >
+                                      تعديل
+                                    </button>
+                                  </>
+                                )}
+                                <button
+                                  onClick={() => handleIdeaAction(s, idx, "delete")}
+                                  className="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded-md text-xs"
+                                >
+                                  حذف
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                        {(!s.ideas || s.ideas.length === 0) && (
+                          <div className="text-center text-sm text-gray-500 bg-gray-50 p-3 rounded-lg border">
+                            لا توجد أفكار
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 border border-violet-200 text-gray-800 align-top">
+                      {teachers.find((t) => t.id === s.teacherId)?.username || (
+                        <button
+                          onClick={() => handleAssignTeacher(s)}
+                          className="text-violet-600 hover:text-violet-800 underline font-medium text-sm"
+                        >
+                          تعيين معلم
+                        </button>
+                      )}
+                    </td>
+                    <td className="p-4 border border-violet-200 align-top">
+                      <button
+                        onClick={() => handleDelete(s)}
+                        className="text-red-500 hover:text-red-600 font-semibold text-sm hover:underline"
+                      >
+                        حذف الطالب
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+  
+            {filteredStudents.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-6xl mb-4">📚</div>
+                <p className="text-lg font-medium">لا يوجد طلاب لعرضهم</p>
+                <p className="text-sm">ابدأ بإضافة طالب جديد</p>
+              </div>
+            )}
+          </div>
+        </div>
+  
+        <div className="bg-white rounded-2xl shadow overflow-hidden">
+          <div className="px-6 py-4 bg-violet-50 border-b border-violet-200">
+            <h2 className="text-xl font-bold text-violet-700">قائمة المعلمين</h2>
+          </div>
+          <div className="p-6">
+            {teachers.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {teachers.map((t) => (
+                  <div key={t.id} className="bg-violet-50 border border-violet-200 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-violet-200 rounded-full flex items-center justify-center text-violet-700 font-bold">
+                        {t.username.charAt(0)}
+                      </div>
+                      <span className="text-gray-800 font-medium">{t.username}</span>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(t)}
+                      className="text-red-500 hover:text-red-600 text-sm font-semibold hover:underline"
+                    >
+                      حذف
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-5xl mb-4">👨‍🏫</div>
+                <p className="text-lg font-medium">لا يوجد معلمون</p>
+                <p className="text-sm">ابدأ بإضافة معلم جديد</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
-};
+}
 
 export default AdminPage;

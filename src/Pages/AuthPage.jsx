@@ -18,8 +18,12 @@ const AuthPage = () => {
       return Swal.fire("تنبيه", "الرجاء تعبئة جميع الحقول", "warning");
     }
 
-    if (role === "student" && !email.includes("tuwaiq")) {
-      return Swal.fire("خطأ", "يجب أن يحتوي البريد الإلكتروني على 'tuwaiq'", "error");
+    if (role === "student" && !email.includes("tuwaiq.edu.sa")) {
+      return Swal.fire(
+        "خطأ",
+        "يجب أن يحتوي البريد الإلكتروني على 'tuwaiq.edu.sa'",
+        "error"
+      );
     }
 
     try {
@@ -48,10 +52,12 @@ const AuthPage = () => {
   };
 
   const handleLogin = async () => {
-
-    if (email === "admin" && password === "admin") {
-      localStorage.setItem("user", JSON.stringify({ role: "admin", username: "admin" }));
-      return Swal.fire("تم", "تم تسجيل الدخول كـ مدير النظام", "success").then(() =>
+    if (email === "admin@tuwaiq.edu.sa" && password === "admin") {
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ role: "admin", username: "admin" })
+      );
+      return Swal.fire("تم", "تم تسجيل الدخول الادمن", "success").then(() =>
         navigate("/admin")
       );
     }
@@ -63,7 +69,11 @@ const AuthPage = () => {
       );
 
       if (!user) {
-        return Swal.fire("خطأ", "بيانات غير صحيحة أو المستخدم غير موجود", "error");
+        return Swal.fire(
+          "خطأ",
+          "بيانات غير صحيحة أو المستخدم غير موجود",
+          "error"
+        );
       }
 
       localStorage.setItem("user", JSON.stringify(user));
@@ -76,18 +86,29 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="bg-white p-6 rounded shadow max-w-md w-full">
-        <h2 className="text-xl font-bold mb-4 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-200 to-violet-50 px-4">
+      <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-lg">
+        <div className="flex flex-col items-center mb-6">
+          <img
+            src="https://cdn.tuwaiq.edu.sa/landing/images/logo/logo-h.png"
+            alt="Tuwaiq Logo"
+            className="w-40 h-auto mb-2"
+          />
+          <h1 className="text-black text-xl font-semibold">
+            Welcome to Tuwaiq Academy{" "}
+          </h1>
+        </div>
+
+        <h2 className="text-2xl font-bold mb-6 text-center text-violet-700">
           {isRegistering ? "إنشاء حساب جديد" : "تسجيل الدخول"}
         </h2>
 
         <div className="mb-4">
-          <label className="block mb-1">الدور:</label>
+          <label className="block mb-1 text-right font-medium">الدور</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="w-full border p-2 rounded"
+            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
           >
             <option value="student">طالب</option>
             <option value="teacher">معلم</option>
@@ -95,44 +116,59 @@ const AuthPage = () => {
         </div>
 
         {isRegistering && (
-          <input
-            type="text"
-            placeholder="الاسم"
-            className="w-full border p-2 rounded mb-3"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
+          <div className="mb-2">
+            <label className="block mb-1 text-right font-medium">الاسم</label>
+            <input
+              type="text"
+              placeholder="الاسم الكامل"
+              className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
         )}
 
-        <input
-          type="text"
-          placeholder="البريد الإلكتروني أو admin"
-          className="w-full border p-2 rounded mb-3"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <div className="mb-2">
+          <label className="block mb-1 text-right font-medium">
+            البريد الإلكتروني
+          </label>
+          <input
+            type="text"
+            placeholder="example@tuwaiq.edu.sa"
+            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
 
-        <input
-          type="password"
-          placeholder="كلمة المرور"
-          className="w-full border p-2 rounded mb-4"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div className="mb-4">
+          <label className="block mb-2 text-right font-medium">
+            كلمة المرور
+          </label>
+          <input
+            type="password"
+            placeholder="********"
+            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
 
         <button
           onClick={isRegistering ? handleRegister : handleLogin}
-          className="w-full bg-blue-600 text-white p-2 rounded"
+          className="w-full bg-violet-600 text-white py-2 rounded-md hover:bg-violet-700 transition"
         >
           {isRegistering ? "تسجيل" : "دخول"}
         </button>
 
-        <p className="text-center mt-4">
+        <p className="text-center text-sm mt-4">
           <button
             onClick={() => setIsRegistering(!isRegistering)}
-            className="text-blue-600 underline"
+            className="text-violet-600 hover:underline"
           >
-            {isRegistering ? "لدي حساب" : "إنشاء حساب جديد"}
+            {isRegistering
+              ? "لدي حساب مسبقاً؟ تسجيل الدخول"
+              : "مستخدم جديد؟ إنشاء حساب"}
           </button>
         </p>
       </div>
