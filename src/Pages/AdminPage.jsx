@@ -54,7 +54,10 @@ const AdminPage = () => {
       updatedIdeas.splice(index, 1);
     }
 
-    await axios.put(`${api}/${student.id}`, { ...student, ideas: updatedIdeas });
+    await axios.put(`${api}/${student.id}`, {
+      ...student,
+      ideas: updatedIdeas,
+    });
     fetchData();
   };
 
@@ -67,7 +70,9 @@ const AdminPage = () => {
           '<input id="swal-email" class="swal2-input" placeholder="البريد">' +
           `<select id="swal-teacher" class="swal2-select">
             <option value="">اختر المعلم</option>
-            ${teachers.map((t) => `<option value="${t.id}">${t.username}</option>`).join("")}
+            ${teachers
+              .map((t) => `<option value="${t.id}">${t.username}</option>`)
+              .join("")}
           </select>`,
         preConfirm: () => {
           const name = document.getElementById("swal-name").value;
@@ -111,7 +116,10 @@ const AdminPage = () => {
       showCancelButton: true,
     });
     if (selectedId) {
-      await axios.put(`${api}/${student.id}`, { ...student, teacherId: selectedId });
+      await axios.put(`${api}/${student.id}`, {
+        ...student,
+        teacherId: selectedId,
+      });
       fetchData();
       Swal.fire("تم", "تم ربط الطالب بالمعلم بنجاح", "success");
     }
@@ -119,7 +127,9 @@ const AdminPage = () => {
 
   const handleDelete = async (user) => {
     const res = await Swal.fire({
-      title: `هل أنت متأكد من حذف ${user.role === "teacher" ? "المعلم" : "الطالب"}؟`,
+      title: `هل أنت متأكد من حذف ${
+        user.role === "teacher" ? "المعلم" : "الطالب"
+      }؟`,
       icon: "warning",
       showCancelButton: true,
     });
@@ -140,8 +150,14 @@ const AdminPage = () => {
         <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-4">
-              <img src="https://cdn.tuwaiq.edu.sa/landing/images/logo/logo-h.png" alt="Tuwaiq" className="w-28 sm:w-32" />
-              <h1 className="text-xl sm:text-3xl font-bold text-violet-700">لوحة تحكم الإدارة</h1>
+              <img
+                src="https://cdn.tuwaiq.edu.sa/landing/images/logo/logo-h.png"
+                alt="Tuwaiq"
+                className="w-28 sm:w-32"
+              />
+              <h1 className="text-xl sm:text-3xl font-bold text-violet-700">
+                لوحة تحكم الادمن
+              </h1>
             </div>
             <button
               onClick={logout}
@@ -151,7 +167,7 @@ const AdminPage = () => {
             </button>
           </div>
         </div>
-  
+
         <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -177,7 +193,7 @@ const AdminPage = () => {
             />
           </div>
         </div>
-  
+
         <div className="bg-white rounded-2xl shadow overflow-auto">
           <div className="px-6 py-4 bg-violet-50 border-b border-violet-200">
             <h2 className="text-xl font-bold text-violet-700">قائمة الطلاب</h2>
@@ -194,7 +210,10 @@ const AdminPage = () => {
               </thead>
               <tbody>
                 {filteredStudents.map((s, i) => (
-                  <tr key={s.id} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                  <tr
+                    key={s.id}
+                    className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
+                  >
                     <td className="p-4 border border-violet-200 font-semibold text-gray-800">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-violet-100 flex justify-center items-center text-violet-700 font-bold">
@@ -206,26 +225,35 @@ const AdminPage = () => {
                     <td className="p-4 border border-violet-200">
                       <div className="space-y-2 max-w-sm">
                         {(s.ideas || []).map((idea, idx) => {
-                          let bg = "bg-gray-50", text = "text-gray-700", border = "border-gray-300"
+                          let bg = "bg-gray-50",
+                            text = "text-gray-700",
+                            border = "border-gray-300";
                           if (idea.status === "مقبولة") {
-                            bg = "bg-green-50"
-                            text = "text-green-700 font-semibold"
-                            border = "border-green-300"
+                            bg = "bg-green-50";
+                            text = "text-green-700 font-semibold";
+                            border = "border-green-300";
                           } else if (idea.status === "مرفوضة") {
-                            bg = "bg-red-50"
-                            text = "text-red-700 font-semibold"
-                            border = "border-red-300"
+                            bg = "bg-red-50";
+                            text = "text-red-700 font-semibold";
+                            border = "border-red-300";
                           } else if (idea.status === "قيد المراجعة") {
-                            bg = "bg-yellow-50"
-                            text = "text-yellow-700 font-semibold"
-                            border = "border-yellow-300"
+                            bg = "bg-yellow-50";
+                            text = "text-yellow-700 font-semibold";
+                            border = "border-yellow-300";
                           }
-  
+
                           return (
-                            <div key={idx} className={`${bg} border ${border} p-3 rounded-lg text-sm`}>
-                              <p className="text-gray-800 mb-2 break-words">{idea.idea}</p>
+                            <div
+                              key={idx}
+                              className={`${bg} border ${border} p-3 rounded-lg text-sm`}
+                            >
+                              <p className="text-gray-800 mb-2 break-words">
+                                {idea.idea}
+                              </p>
                               <div className="flex flex-wrap gap-2 items-center text-xs mb-2">
-                                <span className="bg-white px-2 py-1 rounded-lg border">الحالة:</span>
+                                <span className="bg-white px-2 py-1 rounded-lg border">
+                                  الحالة:
+                                </span>
                                 <span className={text}>{idea.status}</span>
                               </div>
                               {idea.status === "مرفوضة" && (
@@ -237,19 +265,25 @@ const AdminPage = () => {
                                 {idea.status === "قيد المراجعة" && (
                                   <>
                                     <button
-                                      onClick={() => handleIdeaAction(s, idx, "accept")}
+                                      onClick={() =>
+                                        handleIdeaAction(s, idx, "accept")
+                                      }
                                       className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md text-xs"
                                     >
                                       قبول
                                     </button>
                                     <button
-                                      onClick={() => handleIdeaAction(s, idx, "reject")}
+                                      onClick={() =>
+                                        handleIdeaAction(s, idx, "reject")
+                                      }
                                       className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-md text-xs"
                                     >
                                       رفض
                                     </button>
                                     <button
-                                      onClick={() => handleIdeaAction(s, idx, "edit")}
+                                      onClick={() =>
+                                        handleIdeaAction(s, idx, "edit")
+                                      }
                                       className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded-md text-xs"
                                     >
                                       تعديل
@@ -257,14 +291,16 @@ const AdminPage = () => {
                                   </>
                                 )}
                                 <button
-                                  onClick={() => handleIdeaAction(s, idx, "delete")}
+                                  onClick={() =>
+                                    handleIdeaAction(s, idx, "delete")
+                                  }
                                   className="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded-md text-xs"
                                 >
                                   حذف
                                 </button>
                               </div>
                             </div>
-                          )
+                          );
                         })}
                         {(!s.ideas || s.ideas.length === 0) && (
                           <div className="text-center text-sm text-gray-500 bg-gray-50 p-3 rounded-lg border">
@@ -274,14 +310,18 @@ const AdminPage = () => {
                       </div>
                     </td>
                     <td className="p-4 border border-violet-200 text-gray-800 align-top">
-                      {teachers.find((t) => t.id === s.teacherId)?.username || (
+                      <div className="flex flex-col gap-2">
+                        <span>
+                          {teachers.find((t) => t.id === s.teacherId)
+                            ?.username || "لا يوجد معلم"}
+                        </span>
                         <button
                           onClick={() => handleAssignTeacher(s)}
                           className="text-violet-600 hover:text-violet-800 underline font-medium text-sm"
                         >
-                          تعيين معلم
+                          {s.teacherId ? "تغيير المعلم" : "تعيين معلم"}
                         </button>
-                      )}
+                      </div>
                     </td>
                     <td className="p-4 border border-violet-200 align-top">
                       <button
@@ -295,7 +335,7 @@ const AdminPage = () => {
                 ))}
               </tbody>
             </table>
-  
+
             {filteredStudents.length === 0 && (
               <div className="text-center py-12 text-gray-500">
                 <div className="text-6xl mb-4">📚</div>
@@ -305,21 +345,28 @@ const AdminPage = () => {
             )}
           </div>
         </div>
-  
+
         <div className="bg-white rounded-2xl shadow overflow-hidden">
           <div className="px-6 py-4 bg-violet-50 border-b border-violet-200">
-            <h2 className="text-xl font-bold text-violet-700">قائمة المعلمين</h2>
+            <h2 className="text-xl font-bold text-violet-700">
+              قائمة المعلمين
+            </h2>
           </div>
           <div className="p-6">
             {teachers.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {teachers.map((t) => (
-                  <div key={t.id} className="bg-violet-50 border border-violet-200 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition">
+                  <div
+                    key={t.id}
+                    className="bg-violet-50 border border-violet-200 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-violet-200 rounded-full flex items-center justify-center text-violet-700 font-bold">
                         {t.username.charAt(0)}
                       </div>
-                      <span className="text-gray-800 font-medium">{t.username}</span>
+                      <span className="text-gray-800 font-medium">
+                        {t.username}
+                      </span>
                     </div>
                     <button
                       onClick={() => handleDelete(t)}
@@ -342,6 +389,6 @@ const AdminPage = () => {
       </div>
     </div>
   );
-}
+};
 
 export default AdminPage;

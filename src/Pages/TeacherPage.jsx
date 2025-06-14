@@ -18,7 +18,9 @@ const TeacherPage = () => {
     try {
       setLoading(true);
       const { data } = await axios.get(api);
-      const team = data.filter((s) => s.teacherId === teacher?.id);
+      const team = data.filter(
+        (s) => s.teacherId && s.teacherId === teacher?.id
+      );
       setStudents(team);
     } catch {
       Swal.fire("خطأ", "تعذر جلب بيانات الطلاب", "error");
@@ -103,9 +105,13 @@ const TeacherPage = () => {
           </h3>
 
           {loading ? (
-            <p className="text-violet-600 text-center">جاري تحميل البيانات...</p>
+            <p className="text-violet-600 text-center">
+              جاري تحميل البيانات...
+            </p>
           ) : students.length === 0 ? (
-            <p className="text-violet-400 text-center">لا يوجد طلاب مرتبطين بك حالياً.</p>
+            <p className="text-violet-400 text-center">
+              لا يوجد طلاب مرتبطين بك حالياً.
+            </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-h-[65vh] overflow-y-auto">
               {students.map((stu) => (
@@ -113,30 +119,36 @@ const TeacherPage = () => {
                   key={stu.id}
                   className="bg-violet-50 border border-violet-200 rounded-2xl shadow p-5 flex flex-col"
                 >
-                  <h4 className="text-lg font-bold text-violet-700 mb-3">{stu.username}</h4>
+                  <h4 className="text-lg font-bold text-violet-700 mb-3">
+                    {stu.username}
+                  </h4>
 
                   {(stu.ideas || []).length === 0 ? (
-                    <p className="text-violet-400 italic">لا يوجد أفكار حتى الآن.</p>
+                    <p className="text-violet-400 italic">
+                      لا يوجد أفكار حتى الآن.
+                    </p>
                   ) : (
                     <div className="space-y-4">
                       {(stu.ideas || []).map((idea, idx) => {
-                        let bgColor = "bg-yellow-50 border-yellow-300 text-yellow-700";
+                        let bgColor =
+                          "bg-yellow-50 border-yellow-300 text-yellow-700";
                         if (idea.status === "مقبولة") {
-                          bgColor = "bg-green-50 border-green-300 text-green-700 font-semibold";
+                          bgColor =
+                            "bg-green-50 border-green-300 text-green-700 font-semibold";
                         } else if (idea.status === "مرفوضة") {
-                          bgColor = "bg-red-50 border-red-300 text-red-700 font-semibold";
+                          bgColor =
+                            "bg-red-50 border-red-300 text-red-700 font-semibold";
                         }
                         return (
                           <div
                             key={idx}
                             className={`border p-4 rounded-lg shadow-sm ${bgColor}`}
                           >
-                            <p className="mb-1 text-violet-800 font-medium">{idea.idea}</p>
+                            <p className="mb-1 text-violet-800 font-medium">
+                              {idea.idea}
+                            </p>
                             <p className="text-sm">
-                              الحالة:{" "}
-                              <span>
-                                {idea.status}
-                              </span>
+                              الحالة: <span>{idea.status}</span>
                             </p>
                             {idea.status === "مرفوضة" && (
                               <p className="text-red-600 text-sm mt-1">
