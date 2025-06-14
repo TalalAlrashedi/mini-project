@@ -23,7 +23,7 @@ const AdminPage = () => {
 
   const filteredStudents = students
     .filter((s) => s.role === "student")
-    .filter((s) => s.name?.includes(search));
+    .filter((s) => s.username?.includes(search));
 
   const handleAdd = async (type) => {
     if (type === "student") {
@@ -34,7 +34,7 @@ const AdminPage = () => {
           '<textarea id="swal-idea" class="swal2-textarea" placeholder="الفكرة"></textarea>' +
           `<select id="swal-teacher" class="swal2-select">
             <option value="">اختر المعلم</option>
-            ${teachers.map((t) => `<option value="${t.id}">${t.name}</option>`).join("")}
+            ${teachers.map((t) => `<option value="${t.id}">${t.username}</option>`).join("")}
           </select>`,
         preConfirm: () => {
           const name = document.getElementById("swal-name").value;
@@ -47,7 +47,7 @@ const AdminPage = () => {
       });
       if (form) {
         await axios.post(api, {
-          name: form.name,
+          username: form.name,
           idea: form.idea,
           status: "قيد المراجعة",
           role: "student",
@@ -65,7 +65,7 @@ const AdminPage = () => {
       });
       if (name) {
         await axios.post(api, {
-          name,
+          username: name,
           role: "teacher",
         });
         fetchData();
@@ -119,6 +119,22 @@ const AdminPage = () => {
     }
   };
 
+  const handleAssignTeacher = async (student) => {
+    const { value: selectedId } = await Swal.fire({
+      title: `تعيين معلم للطالب: ${student.username}`,
+      input: "select",
+      inputOptions: Object.fromEntries(teachers.map((t) => [t.id, t.username])),
+      inputPlaceholder: "اختر معلماً",
+      showCancelButton: true,
+    });
+
+    if (selectedId) {
+      await axios.put(`${api}/${student.id}`, { ...student, teacherId: selectedId });
+      fetchData();
+      Swal.fire("تم", "تم ربط الطالب بالمعلم بنجاح", "success");
+    }
+  };
+
   const logout = () => {
     localStorage.clear();
     navigate("/");
@@ -163,10 +179,19 @@ const AdminPage = () => {
           <tbody>
             {filteredStudents.map((s) => (
               <tr key={s.id} className="border-t">
-                <td className="p-3 font-medium">{s.name}</td>
+                <td className="p-3 font-medium">{s.username}</td>
                 <td className="p-3">{s.idea}</td>
                 <td className="p-3">{s.status}</td>
-                <td className="p-3">{teachers.find((t) => t.id === s.teacherId)?.name || "غير معين"}</td>
+                <td className="p-3">
+                  {teachers.find((t) => t.id === s.teacherId)?.username || (
+                    <button
+                      onClick={() => handleAssignTeacher(s)}
+                      className="text-blue-600 underline"
+                    >
+                      تعيين معلم
+                    </button>
+                  )}
+                </td>
                 <td className="p-3 flex flex-wrap gap-2">
                   {s.status === "قيد المراجعة" && (
                     <>
@@ -196,7 +221,7 @@ const AdminPage = () => {
         <ul className="list-disc pr-6 space-y-1">
           {teachers.map((t) => (
             <li key={t.id} className="flex justify-between">
-              <span>{t.name}</span>
+              <span>{t.username}</span>
               <button onClick={() => handleDelete(t)} className="text-red-600 text-sm">
                 حذف
               </button>

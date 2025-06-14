@@ -50,29 +50,22 @@ const AuthPage = () => {
   const handleLogin = async () => {
 
     if (email === "admin" && password === "admin") {
-      const adminUser = {
-        id: "admin",
-        username: "المسؤول",
-        email: "admin",
-        role: "admin",
-      };
-      localStorage.setItem("user", JSON.stringify(adminUser));
-      Swal.fire("تم", "تم تسجيل الدخول كمسؤول", "success").then(() => {
-        navigate("/admin");
-      });
-      return;
+      localStorage.setItem("user", JSON.stringify({ role: "admin", username: "admin" }));
+      return Swal.fire("تم", "تم تسجيل الدخول كـ مدير النظام", "success").then(() =>
+        navigate("/admin")
+      );
     }
-  
+
     try {
       const { data } = await axios.get(api);
       const user = data.find(
         (u) => u.email === email && u.password === password && u.role === role
       );
-  
+
       if (!user) {
         return Swal.fire("خطأ", "بيانات غير صحيحة أو المستخدم غير موجود", "error");
       }
-  
+
       localStorage.setItem("user", JSON.stringify(user));
       Swal.fire("تم", "تم تسجيل الدخول بنجاح", "success").then(() => {
         navigate(role === "student" ? "/student" : "/teacher");
@@ -112,8 +105,8 @@ const AuthPage = () => {
         )}
 
         <input
-          type="email"
-          placeholder="البريد الإلكتروني"
+          type="text"
+          placeholder="البريد الإلكتروني أو admin"
           className="w-full border p-2 rounded mb-3"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
