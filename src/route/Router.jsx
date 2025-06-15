@@ -8,14 +8,14 @@ import {
 import AdminPage from "../Pages/AdminPage";
 import StudentPage from "../Pages/StudentPage";
 import TeacherPage from "../Pages/TeacherPage";
-import AuthPage from "../Pages/AuthPage";
-
+import Login from "../Pages/Login";
+import Register from "../Pages/Register";
 
 const ProtectedRoute = ({ children, role }) => {
   const user = JSON.parse(localStorage.getItem("user"));
 
-  if (!user) return <Navigate to="/auth" />;
-  if (role && user.role !== role) return <Navigate to="/auth" />;
+  if (!user) return <Navigate to="/login" />;
+  if (role && user.role !== role) return <Navigate to="/login" />;
   return children;
 };
 
@@ -28,7 +28,9 @@ const router = createBrowserRouter([
     path: "/",
     element: <Layout />,
     children: [
-      { path: "/", element: <AuthPage /> },
+      { path: "/", element: <Navigate to="/login" /> },
+      { path: "/login", element: <Login /> },
+      { path: "/register", element: <Register /> },
 
       {
         path: "admin",
@@ -57,7 +59,7 @@ const router = createBrowserRouter([
 
       {
         path: "*",
-        element: <Navigate to="/" />,
+        element: <Navigate to="/login" />,
       },
     ],
   },

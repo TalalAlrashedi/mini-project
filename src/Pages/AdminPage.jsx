@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { FaUserGraduate, FaChalkboardTeacher, FaCheck, FaTimes } from 'react-icons/fa'; 
 
 const AdminPage = () => {
   const [students, setStudents] = useState([]);
@@ -20,7 +21,23 @@ const AdminPage = () => {
     setTeachers(res.data.filter((u) => u.role === "teacher"));
   };
 
-  const filteredStudents = students.filter((s) => s.username?.includes(search));
+  const filteredStudents = students.filter((s) =>
+    s.username?.includes(search)
+  );
+
+  const acceptedCount = students.reduce((acc, student) => {
+    return (
+      acc +
+      (student.ideas || []).filter((idea) => idea.status === "مقبولة").length
+    );
+  }, 0);
+
+  const rejectedCount = students.reduce((acc, student) => {
+    return (
+      acc +
+      (student.ideas || []).filter((idea) => idea.status === "مرفوضة").length
+    );
+  }, 0);
 
   const handleIdeaAction = async (student, index, type) => {
     const updatedIdeas = [...(student.ideas || [])];
@@ -78,7 +95,10 @@ const AdminPage = () => {
           const name = document.getElementById("swal-name").value;
           const email = document.getElementById("swal-email").value;
           const teacherId = document.getElementById("swal-teacher").value;
-          if (!name || !email || !teacherId) return false;
+          if (!name || !email || !teacherId) {
+            Swal.showValidationMessage("الرجاء تعبئة جميع الحقول");
+            return false;
+          }
           return { name, email, teacherId };
         },
         showCancelButton: true,
@@ -92,6 +112,7 @@ const AdminPage = () => {
           teacherId: form.teacherId,
         });
         fetchData();
+        Swal.fire("تمت الإضافة", "تم إضافة الطالب بنجاح", "success");
       }
     } else {
       const { value: name } = await Swal.fire({
@@ -99,10 +120,16 @@ const AdminPage = () => {
         input: "text",
         inputPlaceholder: "اسم المعلم",
         showCancelButton: true,
+        inputValidator: (value) => {
+          if (!value) {
+            return "الرجاء إدخال اسم المعلم";
+          }
+        },
       });
       if (name) {
         await axios.post(api, { username: name, role: "teacher" });
         fetchData();
+        Swal.fire("تمت الإضافة", "تم إضافة المعلم بنجاح", "success");
       }
     }
   };
@@ -132,10 +159,17 @@ const AdminPage = () => {
       }؟`,
       icon: "warning",
       showCancelButton: true,
+      confirmButtonText: "نعم، احذف!",
+      cancelButtonText: "إلغاء",
     });
     if (res.isConfirmed) {
       await axios.delete(`${api}/${user.id}`);
       fetchData();
+      Swal.fire(
+        "تم الحذف!",
+        `تم حذف ${user.role === "teacher" ? "المعلم" : "الطالب"} بنجاح.`,
+        "success"
+      );
     }
   };
 
@@ -145,42 +179,59 @@ const AdminPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-200 to-violet-50 px-4 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-violet-200 to-violet-50 px-4 py-6 font-[Cairo]">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-4">
-              <img
-                src="https://cdn.tuwaiq.edu.sa/landing/images/logo/logo-h.png"
-                alt="Tuwaiq"
-                className="w-28 sm:w-32"
-              />
-              <h1 className="text-xl sm:text-3xl font-bold text-violet-700">
-                لوحة تحكم الادمن
-              </h1>
+
+        <div className="flex flex-wrap gap-4 justify-between items-center bg-white shadow rounded-2xl p-4 sm:p-6">
+          <div className="flex items-center gap-4">
+            <img src="https://cdn.tuwaiq.edu.sa/landing/images/logo/logo-h.png" className="w-28 sm:w-32" alt="Tuwaiq Academy Logo" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-violet-700">لوحة تحكم الادمن</h1>
+          </div>
+          <button onClick={logout} className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-medium transition">
+            تسجيل خروج
+          </button>
+        </div>
+
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white shadow rounded-2xl p-4 flex items-center gap-4">
+            <FaUserGraduate className="text-3xl text-violet-600" />
+            <div>
+              <p className="text-sm text-gray-500">الطلاب</p>
+              <p className="text-xl font-bold text-gray-700">{students.length}</p>
             </div>
-            <button
-              onClick={logout}
-              className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-medium transition"
-            >
-              تسجيل خروج
-            </button>
+          </div>
+          <div className="bg-white shadow rounded-2xl p-4 flex items-center gap-4">
+            <FaChalkboardTeacher className="text-3xl text-green-600" />
+            <div>
+              <p className="text-sm text-gray-500">المعلمين</p>
+              <p className="text-xl font-bold text-gray-700">{teachers.length}</p>
+            </div>
+          </div>
+          <div className="bg-white shadow rounded-2xl p-4 flex items-center gap-4">
+            <FaCheck className="text-3xl text-green-500" />
+            <div>
+              <p className="text-sm text-gray-500">أفكار مقبولة</p>
+              <p className="text-xl font-bold text-gray-700">{acceptedCount}</p>
+            </div>
+          </div>
+          <div className="bg-white shadow rounded-2xl p-4 flex items-center gap-4">
+            <FaTimes className="text-3xl text-red-500" />
+            <div>
+              <p className="text-sm text-gray-500">أفكار مرفوضة</p>
+              <p className="text-xl font-bold text-gray-700">{rejectedCount}</p>
+            </div>
           </div>
         </div>
+
 
         <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <button
-                onClick={() => handleAdd("student")}
-                className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg font-medium"
-              >
+              <button onClick={() => handleAdd("student")} className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg font-medium">
                 إضافة طالب
               </button>
-              <button
-                onClick={() => handleAdd("teacher")}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium"
-              >
+              <button onClick={() => handleAdd("teacher")} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium">
                 إضافة معلم
               </button>
             </div>
@@ -193,6 +244,7 @@ const AdminPage = () => {
             />
           </div>
         </div>
+
 
         <div className="bg-white rounded-2xl shadow overflow-auto">
           <div className="px-6 py-4 bg-violet-50 border-b border-violet-200">
@@ -345,6 +397,7 @@ const AdminPage = () => {
             )}
           </div>
         </div>
+
 
         <div className="bg-white rounded-2xl shadow overflow-hidden">
           <div className="px-6 py-4 bg-violet-50 border-b border-violet-200">
